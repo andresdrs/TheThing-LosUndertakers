@@ -21,3 +21,4 @@ class Game(Base):
     game_state = (Integer) # podemos definir a los estados como enteros (0 no inciada, 1 iniciada, 2 finalizada)
     min_players = Column(Integer)
     max_players = Column(Integer)
+    players_ingame = Column(Integer)
