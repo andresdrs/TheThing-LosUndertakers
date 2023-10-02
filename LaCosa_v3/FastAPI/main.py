@@ -50,7 +50,7 @@ def get_db(): # se intenta conexión con db.
 # definimos endpoints!!!
 
 # creación de usuario
-@app.post("/users/", status_code=status.HTTP_201_CREATED)
+@app.post("/users/", status_code=status.HTTP_200_OK)
 async def create_user(user: userBase, db: Session = Depends(get_db)):
     # verificar si ya hay un usuario con el mismo nombre
     existing_user = db.query(models.User).filter(models.User.nickname == user.nickname).first()
@@ -72,14 +72,13 @@ async def create_user(user: userBase, db: Session = Depends(get_db)):
 
 
 # versión joaquín adaptada
-@app.post("/games/", status_code=status.HTTP_201_CREATED)
+@app.post("/games/", status_code=status.HTTP_200_OK)
 async def create_game(game: gameBase, db: Session = Depends(get_db)):
     # hacemos manejos de errores. Si ocurre algún error dentro del bloque try, salta excepción del final.
-    try:
         # vemos si ya existe un juego con el nombre que queremos
         existing_game = db.query(models.Game).filter(models.Game.game_name == game.game_name).first()
         if existing_game:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Game with this name already exists.")
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
         # si existe, salta excepción, si no, continuamos ...
 
         # creamos juego con la info que vino de parámetro e inicializamos valores de game_state y players_in
@@ -99,15 +98,12 @@ async def create_game(game: gameBase, db: Session = Depends(get_db)):
         # devuelvo el nombre del game para que se haga el joinGame después
         # porque el creador de la partida
         return {"game_name": db_game.game_name}
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 
 # mostrar listado de partidas
 # versión joaquín adaptada
-@app.get("/games_list/", response_model=List[gameBase])
+@app.get("/games_list/", response_model=List[gameBase], status_code=status.HTTP_200_OK)
 async def get_games(skip: int = 0, limit: int = 10, db : Session = Depends(get_db)):
     # joaquín había hecho la versión con listas que retornaba la lista de partidas pero
     # en este caso se devuelve una lista de objetos tipo Game que tengan el game_state en 0 (o sea partidas no iniciadas)
@@ -123,19 +119,19 @@ async def join_game(game_name: str, player_id: int, db: Session = Depends(get_db
     # busco el juego que tiene el nombre game_name (obtenido como parámetro) en mi BD
     game = db.query(models.Game).filter(models.Game.game_name == game_name).first()
     if not game: # si no existe el game, tiro excepción
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Game not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     
     # si el game esta lleno, tiro excepción
     # esto es adaptado del código de joaquín
     if game.players_in is not None and game.players_in >= game.max_players:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Game is already full")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
 
 
     # chequeo que el usuario que se quiere unir al juego no esté
     # en otro juego ya.
     existing_player_game = db.query(models.User).filter(models.User.id == player_id).first()
     if existing_player_game and existing_player_game.user_game:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Player is already in a game")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
     
     # busco el usuario que tiene el id player_id en mi BD
     # y le actualizo los atributos.
@@ -160,12 +156,12 @@ async def join_game(game_name: str, player_id: int, db: Session = Depends(get_db
     return {"message": "Te has unido a la partida."} # esto no se si es de ayuda pero bueno
 
 # obtener listado de jugadores en el juego
-@app.get("/games/{game_name}/players", response_model=List[userBase])
+@app.get("/games/{game_name}/players", response_model=List[userBase], status_code=status.HTTP_200_OK)
 async def get_players_in_game(game_name: str, db: Session = Depends(get_db)):
     # Buscar la partida por su nombre
     game = db.query(models.Game).filter(models.Game.game_name == game_name).first()
     if not game:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Game not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     
     # Obtener la lista de jugadores que están en la partida
     players = db.query(models.User).filter(models.User.user_game == game_name).all()
@@ -177,30 +173,33 @@ async def start_game(game_name: str, player_id: int, db : Session = Depends(get_
     # chequear que el juego existe
     game = db.query(models.Game).filter(models.Game.game_name == game_name).first()
     if not game:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Game not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     
-    # busco el user que tiene el player_id del jugador que mando la petición de iniciar partida
-    user = db.query(models.User).filter(models.User.id == player_id).first()
-    # solo el creador puede inicar partida, me fijo si el usuario obtenido es creador
-    # tengamos en cuenta que solo basta ver si es creador, no hace falta ver si el nombre de la partida
-    # de user_game es el mismo a game_name pasado en parámetro, ya que un jugador sólo puede estar
-    # en una sola partida, y si un jugador es creador, está únicamente en la partida que creó, que es la de game_name
-    if user.is_creator:
-        # como se inicia el juego, se cambia el estado del juego inciado
-        game.game_state = 1
-        # Commit the changes to the database
-        db.commit()
+    if game.players_in < game.min_players:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
     else:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Player isn't creator")
-    
+        # busco el user que tiene el player_id del jugador que mando la petición de iniciar partida
+        user = db.query(models.User).filter(models.User.id == player_id).first()
+        # solo el creador puede inicar partida, me fijo si el usuario obtenido es creador
+        # tengamos en cuenta que solo basta ver si es creador, no hace falta ver si el nombre de la partida
+        # de user_game es el mismo a game_name pasado en parámetro, ya que un jugador sólo puede estar
+        # en una sola partida, y si un jugador es creador, está únicamente en la partida que creó, que es la de game_name
+        if user.is_creator:
+            # como se inicia el juego, se cambia el estado del juego inciado
+            game.game_state = 1
+            # Commit the changes to the database
+            db.commit()
+        else:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
+        
     return {"message": "Game started successfully"}
 
 # este endpoint lo uso para poder hacer que todos los jugadores en una partida vayan al juego cuando se inicia
-@app.get("/games/{game_name}/status")
+@app.get("/games/{game_name}/status", status_code=status.HTTP_200_OK)
 async def get_game_status(game_name: str, db: Session = Depends(get_db)):
     # obtengo el juego
     game = db.query(models.Game).filter(models.Game.game_name == game_name).first()
     if not game:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Game not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
     return {"gameStarted": game.game_state == 1} # si el juego esta iniciado, devuelve 1 (de iniciado)
