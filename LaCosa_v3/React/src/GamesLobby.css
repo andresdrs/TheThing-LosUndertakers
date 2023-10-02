@@ -1,0 +1,28 @@
+.mainContainer-GamesLobby {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    padding: 20px;
+    background-color: rgb(255, 255, 255);
+    padding: 40px 30px 30px 30px;
+    border-radius: 10px;
+    width: 400px;
+  }
+  
+  .gameInfoContainer {
+    margin-bottom: 20px;
+  }
+  
+  .playerInfo {
+    margin-bottom: 10px;
+  }
+  
+  .titleContainer-GamesLobby {
+    font-size: 20px;
+    font-weight: bold;
+  }
+  
+  /* Add any other styling you need */
+  

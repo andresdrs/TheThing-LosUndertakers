@@ -1,0 +1,73 @@
+/* GamesHome.css */
+
+body {
+    background-color: #51a2dc;;
+    font-family: sans-serif;
+  }
+
+  .mainContainer-GamesHome {
+    position: fixed;
+    text-align: left;
+    padding: 20px;
+    background-color: rgb(255, 255, 255);
+    padding: 40px 30px 30px 30px;
+    border-radius: 10px;
+    width: 24%;
+    left: 1%;
+    top: 2%;
+    height: 96%;
+  }
+
+  .listContainer-GamesHome ul {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .listContainer-GamesHome ul li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  
+  .listContainer-GamesHome ul li button {
+    margin-left: 100px;
+  }
+  
+
+  .listContainer-GamesHome {
+    position: fixed;
+    text-align: left;
+    padding: 20px;
+    background-color: rgb(255, 255, 255);
+    padding: 40px 30px 30px 30px;
+    border-radius: 10px;
+    width: 73%;
+    top: 2%;
+    right: 1%;
+    height: 96%;
+  }
+  
+  
+  .titleContainer-GamesHome {
+    font-size: 24px;
+    margin-bottom: 10px;
+    font-weight:bold;
+  }
+  
+  .buttonContainer-GamesHome {
+    margin-top: 20px;
+  }
+  
+  .inputButton-GamesHome {
+    padding: 10px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .inputButton-GamesHome:hover {
+    background-color: #45a049;
+  }
+  
